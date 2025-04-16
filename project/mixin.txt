@@ -2773,6 +2773,33 @@ SDLSupport loadSDL(const(char)* libName){
 // expansion at /usr/include/dmd/phobos/std/functional.d(452,16)
 cast(T)a < cast(T) b
 
+// expansion at source/geometry/surface.d(21,9)
+ulong[2LU] offsets;
+
+// expansion at source/geometry/surface.d(22,9)
+offsets[0] = 0;
+
+// expansion at source/geometry/surface.d(26,13)
+glEnableVertexAttribArray(0LU);
+
+// expansion at source/geometry/surface.d(27,13)
+glVertexAttribPointer(0LU, 3LU, GL_FLOAT, GL_FALSE, 24LU, cast(GLvoid*)(GLfloat.sizeof*offsets[idx]));
+
+// expansion at source/geometry/surface.d(29,17)
+offsets[1LU] = offsets[0LU] + 3LU;
+
+// expansion at source/geometry/surface.d(26,13)
+glEnableVertexAttribArray(1LU);
+
+// expansion at source/geometry/surface.d(27,13)
+glVertexAttribPointer(1LU, 3LU, GL_FLOAT, GL_FALSE, 24LU, cast(GLvoid*)(GLfloat.sizeof*offsets[idx]));
+
+// expansion at source/geometry/surface.d(39,13)
+glDisableVertexAttribArray(0LU);
+
+// expansion at source/geometry/surface.d(39,13)
+glDisableVertexAttribArray(1LU);
+
 // expansion at /usr/include/dmd/phobos/std/format/spec.d(170,13)
 private ubyte _flDash_flZero_flSpace_flPlus_flHash_flEqual_flSeparator__bf;@property bool flDash() @safe pure nothrow @nogc const { return (_flDash_flZero_flSpace_flPlus_flHash_flEqual_flSeparator__bf & 1U) != 0;}
 @property void flDash(bool v) @safe pure nothrow @nogc { if (v) _flDash_flZero_flSpace_flPlus_flHash_flEqual_flSeparator__bf |= 1U;else _flDash_flZero_flSpace_flPlus_flHash_flEqual_flSeparator__bf &= cast(typeof(_flDash_flZero_flSpace_flPlus_flHash_flEqual_flSeparator__bf))(-1-cast(typeof(_flDash_flZero_flSpace_flPlus_flHash_flEqual_flSeparator__bf))1U);}
@@ -2872,33 +2899,6 @@ onOutOfMemoryError();
 
 // expansion at
 .object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
-
-// expansion at source/geometry/surface.d(21,9)
-ulong[2LU] offsets;
-
-// expansion at source/geometry/surface.d(22,9)
-offsets[0] = 0;
-
-// expansion at source/geometry/surface.d(26,13)
-glEnableVertexAttribArray(0LU);
-
-// expansion at source/geometry/surface.d(27,13)
-glVertexAttribPointer(0LU, 3LU, GL_FLOAT, GL_FALSE, 24LU, cast(GLvoid*)(GLfloat.sizeof*offsets[idx]));
-
-// expansion at source/geometry/surface.d(29,17)
-offsets[1LU] = offsets[0LU] + 3LU;
-
-// expansion at source/geometry/surface.d(26,13)
-glEnableVertexAttribArray(1LU);
-
-// expansion at source/geometry/surface.d(27,13)
-glVertexAttribPointer(1LU, 3LU, GL_FLOAT, GL_FALSE, 24LU, cast(GLvoid*)(GLfloat.sizeof*offsets[idx]));
-
-// expansion at source/geometry/surface.d(39,13)
-glDisableVertexAttribArray(0LU);
-
-// expansion at source/geometry/surface.d(39,13)
-glDisableVertexAttribArray(1LU);
 
 // expansion at /usr/include/dmd/phobos/std/typecons.d(467,13)
 enum int schema = 0;
@@ -3019,9 +3019,6 @@ glDisableVertexAttribArray(0LU);
 
 // expansion at source/geometry/surface.d(39,13)
 glDisableVertexAttribArray(1LU);
-
-// expansion at
-.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
 
 // expansion at
 .object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;

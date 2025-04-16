@@ -3,17 +3,15 @@
 in vs{
     vec3 normal;
     vec3 fragPos;
-    vec3 vertexPos;
+    vec3 vertexColor;
 } fs_in;
 
 out vec4 fragColor;
 
 
-uniform mat4 uModel;
-uniform mat4 uView;
-uniform mat4 uProjection;
 
 uniform vec3 uBaseColor;
+
 uniform float uWindowDensity = 0.5;
 uniform float uWindowBrightness = 0.8;
 uniform float uTime = 0.0;
@@ -119,7 +117,7 @@ vec3 windowPattern(vec3 position) {
 
 void main() {
     // Get window pattern
-    vec3 windowColor = windowPattern(fs_in.vertexPos);
+    vec3 windowColor = windowPattern(fs_in.vertexColor);
     
     // Ambient light for the rest of the building
     float ambientStrength = 0.3;
