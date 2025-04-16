@@ -1,4 +1,4 @@
-/// City Graphics Application module
+// City Graphics Application module
 module city_app;
 
 import std.stdio : writeln;
@@ -33,11 +33,11 @@ struct CityGraphicsApp {
         try {
             writeln("DEBUG CONSTRUCTOR: Starting constructor");
             
-            // Setup SDL OpenGL Version
             writeln("DEBUG CONSTRUCTOR: Setting up SDL OpenGL");
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major_ogl_version);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_ogl_version);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+            
             // We want to request a double buffer for smooth updating.
             SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
             SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -53,7 +53,6 @@ struct CityGraphicsApp {
                                       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
             writeln("DEBUG CONSTRUCTOR: SDL window created");
 
-            // Create the OpenGL context and associate it with our window
             writeln("DEBUG CONSTRUCTOR: Creating OpenGL context");
             mContext = SDL_GL_CreateContext(mWindow);
             writeln("DEBUG CONSTRUCTOR: OpenGL context created");
@@ -63,37 +62,30 @@ struct CityGraphicsApp {
             auto retVal = LoadOpenGLLib();
             writeln("DEBUG CONSTRUCTOR: OpenGL library loaded");
 
-            // Check OpenGL version
             writeln("DEBUG CONSTRUCTOR: Getting OpenGL version");
             GetOpenGLVersionInfo();
             writeln("DEBUG CONSTRUCTOR: OpenGL version checked");
 
-            // Create a renderer
             writeln("DEBUG CONSTRUCTOR: Creating renderer");
             mRenderer = new Renderer(mWindow, 800, 600);
             writeln("DEBUG CONSTRUCTOR: Renderer created");
 
-            // Create a camera
             writeln("DEBUG CONSTRUCTOR: Creating camera");
             mCamera = new Camera();
             writeln("DEBUG CONSTRUCTOR: Camera created");
             
-            // Position camera to view the city from a good vantage point
             writeln("DEBUG CONSTRUCTOR: Positioning camera");
             mCamera.SetCameraPosition(0.0f, 15.0f, 40.0f);
             writeln("DEBUG CONSTRUCTOR: Camera positioned");
             
-            // Update the view matrix after positioning
             writeln("DEBUG CONSTRUCTOR: Updating camera view matrix");
             mCamera.UpdateViewMatrix();
             writeln("DEBUG CONSTRUCTOR: Camera view matrix updated");
 
-            // Create (or load) a Scene Tree
             writeln("DEBUG CONSTRUCTOR: Creating scene tree");
             mSceneTree = new SceneTree("root");
             writeln("DEBUG CONSTRUCTOR: Scene tree created");
             
-            // Create city generator
             writeln("DEBUG CONSTRUCTOR: Creating city generator");
             mCityGenerator = new CityGenerator(mSceneTree);
             writeln("DEBUG CONSTRUCTOR: City generator created");
@@ -108,9 +100,7 @@ struct CityGraphicsApp {
 
     /// Destructor
     ~this() {
-        // Destroy our context
         SDL_GL_DeleteContext(mContext);
-        // Destroy our window
         SDL_DestroyWindow(mWindow);
     }
 
@@ -152,7 +142,6 @@ struct CityGraphicsApp {
         mCamera.MouseLook(mouseX, mouseY);
     }
 
-    /// A helper function to setup a scene.
     void SetupScene() {
         try {
             writeln("DEBUG: SetupScene - Starting scene setup");
@@ -168,66 +157,24 @@ struct CityGraphicsApp {
             // Create basic vertex shader for buildings
             writeln("DEBUG: SetupScene - Checking building vertex shader");
             if (!exists("pipelines/city/building.vert")) {
-                writeln("DEBUG: SetupScene - Creating building vertex shader");
-                write("pipelines/city/building.vert", 
-                "#version 410 core
-layout(location=0) in vec3 aPosition;
-layout(location=1) in vec3 aNormal;
-out vs{ vec3 normal; vec3 fragPos; } vs_out;
-uniform mat4 uModel;
-uniform mat4 uView;
-uniform mat4 uProjection;
-void main() {
-    vs_out.normal = aNormal;
-    vs_out.fragPos = vec3(uModel * vec4(aPosition, 1.0));
-    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1.0);
-}");
+                writeln("DEBUG: SetupScene - building vertex shader doesn't exist");
             }
             
             // Create basic fragment shader for buildings
             writeln("DEBUG: SetupScene - Checking building fragment shader");
             if (!exists("pipelines/city/building.frag")) {
-                writeln("DEBUG: SetupScene - Creating building fragment shader");
-                write("pipelines/city/building.frag", 
-                "#version 410 core
-in vs{ vec3 normal; vec3 fragPos; } fs_in;
-out vec4 fragColor;
-uniform vec3 uBuildingColor;
-void main() {
-    fragColor = vec4(uBuildingColor, 1.0);
-}");
+                writeln("DEBUG: SetupScene - building fragment shader doesn't exist");
             }
             
-            // Create basic vertex shader for ground
             writeln("DEBUG: SetupScene - Checking ground vertex shader");
             if (!exists("pipelines/city/ground.vert")) {
-                writeln("DEBUG: SetupScene - Creating ground vertex shader");
-                write("pipelines/city/ground.vert", 
-                "#version 410 core
-layout(location=0) in vec3 aPosition;
-layout(location=1) in vec3 aNormal;
-out vs{ vec3 normal; } vs_out;
-uniform mat4 uModel;
-uniform mat4 uView;
-uniform mat4 uProjection;
-void main() {
-    vs_out.normal = aNormal;
-    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1.0);
-}");
+                writeln("DEBUG: SetupScene - ground vertex shader doesn't exist");
             }
             
             // Create basic fragment shader for ground
             writeln("DEBUG: SetupScene - Checking ground fragment shader");
             if (!exists("pipelines/city/ground.frag")) {
-                writeln("DEBUG: SetupScene - Creating ground fragment shader");
-                write("pipelines/city/ground.frag", 
-                "#version 410 core
-in vs{ vec3 normal; } fs_in;
-out vec4 fragColor;
-uniform vec3 uGroundColor;
-void main() {
-    fragColor = vec4(uGroundColor, 1.0);
-}");
+                writeln("DEBUG: SetupScene - ground fragment shader doesn't exist");
             }
             
             // Make sure the camera view matrix is updated
