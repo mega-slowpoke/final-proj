@@ -176,9 +176,7 @@ class SurfaceGround : ISurface {
         writeln("DEBUG: MakeGround - vertex attributes set");
 
         // Unbind
-        writeln("DEBUG: MakeGround - unbinding VAO");
         glBindVertexArray(0);
-        writeln("DEBUG: MakeGround - disabling vertex attributes");
         DisableVertexAttributes!VertexFormat3F3F();
         writeln("DEBUG: MakeGround - completed");
     }
@@ -195,14 +193,11 @@ class BuildingMaterial : IMaterial {
         mColor = color;
     }
 
-    /// Override update to set building color
     override void Update() {
-        // Set our active Shader graphics pipeline 
         PipelineUse(mPipelineName);
         
-        // Set any uniforms for our mesh if they exist in the shader
-        if("uBuildingColor" in mUniformMap) {
-            mUniformMap["uBuildingColor"].Set(mColor.DataPtr());
+        if("uBaseColor" in mUniformMap) {
+            mUniformMap["uBaseColor"].Set(mColor.DataPtr());
         }
     }
 }
@@ -224,8 +219,188 @@ class GroundMaterial : IMaterial {
         PipelineUse(mPipelineName);
         
         // Set any uniforms for our mesh if they exist in the shader
-        if("uGroundColor" in mUniformMap) {
-            mUniformMap["uGroundColor"].Set(mColor.DataPtr());
+        if("uBaseColor" in mUniformMap) {
+            mUniformMap["uBaseColor"].Set(mColor.DataPtr());
+        }
+    }
+}
+
+
+class SurfaceCylindricalBuilding : ISurface {
+    GLuint mVBO;
+    GLuint mIBO;
+    size_t mIndices;
+
+    /// Create a cylindrical building
+    this(float radius, float height, int segments = 20) {
+        MakeCylinder(radius, height, segments);
+    }
+
+    /// Render the cylindrical building
+    override void Render() {
+        glBindVertexArray(mVAO);
+        glDrawElements(GL_TRIANGLES, cast(GLuint)mIndices, GL_UNSIGNED_INT, null);
+    }
+
+
+    /// Create cylinder geometry
+    void MakeCylinder(float radius, float height, int segments) {
+        import std.math : sin, cos, PI;
+        
+        GLfloat[] vertices;
+        GLuint[] indices;
+        
+        // Calculate the angle between segments
+        float angleStep = 2.0f * PI / segments;
+        
+        // Bottom center vertex (0)
+        vertices ~= [0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f];
+        
+        // Bottom circle vertices (1 to segments)
+        for (int i = 0; i < segments; i++) {
+            float angle = i * angleStep;
+            float x = radius * cos(angle);
+            float z = radius * sin(angle);
+            
+            // Position and normal for bottom circle vertex
+            vertices ~= [x, 0.0f, z, 0.0f, -1.0f, 0.0f];
+        }
+        
+        // Top center vertex (segments+1)
+        vertices ~= [0.0f, height, 0.0f, 0.0f, 1.0f, 0.0f];
+        
+        // Top circle vertices (segments+2 to 2*segments+1)
+        for (int i = 0; i < segments; i++) {
+            float angle = i * angleStep;
+            float x = radius * cos(angle);
+            float z = radius * sin(angle);
+            
+            // Position and normal for top circle vertex
+            vertices ~= [x, height, z, 0.0f, 1.0f, 0.0f];
+        }
+        
+        // Side vertices (2*segments+2 to 3*segments+1)
+        for (int i = 0; i < segments; i++) {
+            float angle = i * angleStep;
+            float x = radius * cos(angle);
+            float z = radius * sin(angle);
+            float nx = cos(angle);  // Normal points outward
+            float nz = sin(angle);
+            
+            // Position and normal for side vertex at bottom
+            vertices ~= [x, 0.0f, z, nx, 0.0f, nz];
+        }
+        
+        // Side vertices (3*segments+2 to 4*segments+1)
+        for (int i = 0; i < segments; i++) {
+            float angle = i * angleStep;
+            float x = radius * cos(angle);
+            float z = radius * sin(angle);
+            float nx = cos(angle);  // Normal points outward
+            float nz = sin(angle);
+            
+            // Position and normal for side vertex at top
+            vertices ~= [x, height, z, nx, 0.0f, nz];
+        }
+        
+        // Create indices for bottom circle
+        for (int i = 0; i < segments; i++) {
+            indices ~= 0;  // Center
+            indices ~= 1 + i;
+            indices ~= 1 + ((i + 1) % segments);
+        }
+        
+        // Create indices for top circle
+        for (int i = 0; i < segments; i++) {
+            indices ~= segments + 1;  // Center
+            indices ~= segments + 2 + ((i + 1) % segments);
+            indices ~= segments + 2 + i;
+        }
+        
+        // Create indices for sides (quads made of two triangles)
+        int sideStartIndex = 2 * segments + 2;
+        for (int i = 0; i < segments; i++) {
+            int current = sideStartIndex + i;
+            int next = sideStartIndex + ((i + 1) % segments);
+            int currentTop = current + segments;
+            int nextTop = next + segments;
+            
+            // First triangle
+            indices ~= current;
+            indices ~= currentTop;
+            indices ~= next;
+            
+            // Second triangle
+            indices ~= next;
+            indices ~= currentTop;
+            indices ~= nextTop;
+        }
+        
+        mIndices = indices.length;
+        
+        // Create OpenGL buffers
+        glGenVertexArrays(1, &mVAO);
+        glBindVertexArray(mVAO);
+        
+        // Create IBO
+        glGenBuffers(1, &mIBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.length * GLuint.sizeof, indices.ptr, GL_STATIC_DRAW);
+        
+        // Create VBO
+        glGenBuffers(1, &mVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, mVBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.length * GLfloat.sizeof, vertices.ptr, GL_STATIC_DRAW);
+        
+        // Set vertex attributes
+        SetVertexAttributes!VertexFormat3F3F();
+        
+        // Unbind
+        glBindVertexArray(0);
+        DisableVertexAttributes!VertexFormat3F3F();
+    }
+}
+
+
+/// A material for buildings with windows
+class TexturedBuildingMaterial : IMaterial {
+    // Building base color
+    vec3 mBaseColor;
+    // Window lighting pattern
+    float mWindowDensity = 0.5f;
+    float mWindowBrightness = 0.8f;
+    
+    /// Constructor with color parameters
+    this(string pipelineName, vec3 baseColor, float windowDensity = 0.5f, float windowBrightness = 0.8f) {
+        super(pipelineName);
+        mBaseColor = baseColor;
+        mWindowDensity = windowDensity;
+        mWindowBrightness = windowBrightness;
+    }
+    
+    /// Override update to set building material properties
+    override void Update() {
+        // Set our active Shader graphics pipeline 
+        PipelineUse(mPipelineName);
+        
+        // Set any uniforms for our mesh if they exist in the shader
+        if("uBaseColor" in mUniformMap) {
+            mUniformMap["uBaseColor"].Set(mBaseColor.DataPtr());
+        }
+        
+        if("uWindowDensity" in mUniformMap) {
+            mUniformMap["uWindowDensity"].Set(mWindowDensity);
+        }
+        
+        if("uWindowBrightness" in mUniformMap) {
+            mUniformMap["uWindowBrightness"].Set(mWindowBrightness);
+        }
+        
+        if("uTime" in mUniformMap) {
+            // Simple animation for window lights blinking
+            import std.datetime : Clock;
+            float time = (Clock.currTime().toUnixTime() % 1000) / 10.0f;
+            mUniformMap["uTime"].Set(time);
         }
     }
 }
@@ -320,77 +495,56 @@ class CityGenerator {
         }
     }
     
-    /// Generate the entire city
     void generateCity() {
         try {
-            // Debug print
             import std.stdio : writeln;
-            writeln("DEBUG: Starting city generation");
             
             // Create ground
-            writeln("DEBUG: About to create ground");
             createGround();
-            writeln("DEBUG: Ground created successfully");
             
-            // Create buildings - reduced number for debugging
-            writeln("DEBUG: About to create buildings");
+            // Create buildings - with various shapes
             for (int x = 0; x < mGridSize; x++) {
                 for (int z = 0; z < mGridSize; z++) {
-                    writeln("DEBUG: Creating building at (", x, ",", z, ")");
-                    createBuilding(x, z);
-                    writeln("DEBUG: Building at (", x, ",", z, ") created successfully");
+                    // Every third building will be cylindrical
+                    if ((x + z) % 3 == 0) {
+                        createCylindricalBuilding(x, z);
+                    } else {
+                        createBuilding(x, z);
+                    }
                 }
             }
-            writeln("DEBUG: All buildings created successfully");
         } catch (Exception e) {
             import std.stdio : writeln;
             writeln("Error generating city: ", e.msg);
         }
     }
     
-    /// Create ground plane
+
     void createGround() {
         try {
-            import std.stdio : writeln;
-            writeln("DEBUG: Creating ground surface");
             // Create ground mesh
             ISurface groundSurface = new SurfaceGround(mGroundSize, mGroundSize);
-            writeln("DEBUG: Ground surface created");
             
-            writeln("DEBUG: Creating ground material");
-            IMaterial groundMaterial = new GroundMaterial("ground");
-            writeln("DEBUG: Ground material created");
+            // Create ground material with proper pipeline
+            IMaterial groundMaterial = new GroundMaterial("building");
             
-            // Create a fixed green color for the ground
-            vec3 groundColor = vec3(0.2f, 0.7f, 0.2f); // Green color
-            
-            writeln("DEBUG: Adding uniforms to ground material");
-            // Add uniforms to the ground material
+            // Add all uniforms needed by the shader
             groundMaterial.AddUniform(new Uniform("uModel", "mat4", null));
-            writeln("DEBUG: Added uModel uniform");
             groundMaterial.AddUniform(new Uniform("uView", "mat4", null));
-            writeln("DEBUG: Added uView uniform");
             groundMaterial.AddUniform(new Uniform("uProjection", "mat4", null));
-            writeln("DEBUG: Added uProjection uniform");
-            groundMaterial.AddUniform(new Uniform("uGroundColor", "vec3", groundColor.DataPtr()));
-            writeln("DEBUG: Added uGroundColor uniform");
+            groundMaterial.AddUniform(new Uniform("uBaseColor", "vec3", vec3(0.2f, 0.7f, 0.2f).DataPtr()));
             
-            writeln("DEBUG: Creating ground node");
             // Create mesh node and add to scene
             MeshNode groundNode = new MeshNode("ground", groundSurface, groundMaterial);
             groundNode.mModelMatrix = MatrixMakeTranslation(vec3(0.0f, 0.0f, 0.0f));
-            writeln("DEBUG: Ground model matrix set");
             
-            writeln("DEBUG: Adding ground node to scene");
             mSceneTree.GetRootNode().AddChildSceneNode(groundNode);
-            writeln("DEBUG: Ground node added to scene");
         } catch (Exception e) {
             import std.stdio : writeln;
             writeln("Error creating ground: ", e.msg);
-            throw e;
         }
     }
-    
+        
     /// Create a building at grid position (x, z)
     void createBuilding(int x, int z) {
         // Using fixed values instead of random to ensure stability during debugging
@@ -414,10 +568,41 @@ class CityGenerator {
         buildingMaterial.AddUniform(new Uniform("uModel", "mat4", null));
         buildingMaterial.AddUniform(new Uniform("uView", "mat4", null));
         buildingMaterial.AddUniform(new Uniform("uProjection", "mat4", null));
-        buildingMaterial.AddUniform(new Uniform("uBuildingColor", "vec3", buildingColor.DataPtr()));
+        buildingMaterial.AddUniform(new Uniform("uBaseColor", "vec3", buildingColor.DataPtr()));
         
         // Create building node and add to scene
         string buildingName = "building_" ~ x.to!string ~ "_" ~ z.to!string;
+        MeshNode buildingNode = new MeshNode(buildingName, buildingSurface, buildingMaterial);
+        buildingNode.mModelMatrix = MatrixMakeTranslation(vec3(posX, 0.0f, posZ));
+        
+        mSceneTree.GetRootNode().AddChildSceneNode(buildingNode);
+    }
+
+    void createCylindricalBuilding(int x, int z) {
+        // Deterministic values for cylindrical buildings
+        float buildingHeight = 5.0f + (x % 4) + (z % 5); // Make cylindrical buildings taller
+        float radius = mBlockSize * 0.4f;
+        
+        // Calculate building position
+        float posX = (x * (mBlockSize + mStreetWidth)) - (mGroundSize / 2) + (mBlockSize / 2);
+        float posZ = (z * (mBlockSize + mStreetWidth)) - (mGroundSize / 2) + (mBlockSize / 2);
+        
+        // Create building color - different tint for cylindrical buildings
+        float colorValue = 0.4f + (((x + z) % 5) / 10.0f);
+        vec3 buildingColor = vec3(colorValue, colorValue * 0.95f, colorValue * 0.9f);
+        
+        // Create cylindrical building mesh
+        ISurface buildingSurface = new SurfaceCylindricalBuilding(radius, buildingHeight, 16);
+        IMaterial buildingMaterial = new BuildingMaterial("building", buildingColor);
+        
+        // Add uniforms to the building material
+        buildingMaterial.AddUniform(new Uniform("uModel", "mat4", null));
+        buildingMaterial.AddUniform(new Uniform("uView", "mat4", null));
+        buildingMaterial.AddUniform(new Uniform("uProjection", "mat4", null));
+        buildingMaterial.AddUniform(new Uniform("uBaseColor", "vec3", buildingColor.DataPtr()));
+        
+        // Create building node and add to scene
+        string buildingName = "building_cyl_" ~ x.to!string ~ "_" ~ z.to!string;
         MeshNode buildingNode = new MeshNode(buildingName, buildingSurface, buildingMaterial);
         buildingNode.mModelMatrix = MatrixMakeTranslation(vec3(posX, 0.0f, posZ));
         
