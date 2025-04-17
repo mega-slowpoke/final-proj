@@ -2900,6 +2900,45 @@ onOutOfMemoryError();
 // expansion at
 .object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
 
+// expansion at /usr/include/dmd/phobos/std/internal/memory.d(40,18)
+onOutOfMemoryError();
+
+// expansion at
+.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
+
+// expansion at
+.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
+
+// expansion at
+.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
+
+// expansion at /usr/include/dmd/phobos/std/functional.d(222,13)
+alias a = __a ;
+
+// expansion at /usr/include/dmd/phobos/std/functional.d(223,13)
+alias b = __b ;
+
+// expansion at /usr/include/dmd/phobos/std/functional.d(224,20)
+a == b
+
+// expansion at /usr/include/dmd/phobos/std/functional.d(222,13)
+alias a = __a ;
+
+// expansion at /usr/include/dmd/phobos/std/functional.d(223,13)
+alias b = __b ;
+
+// expansion at /usr/include/dmd/phobos/std/functional.d(224,20)
+a == b
+
+// expansion at
+.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
+
+// expansion at
+.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
+
+// expansion at
+.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
+
 // expansion at /usr/include/dmd/phobos/std/typecons.d(467,13)
 enum int schema = 0;
 
@@ -2953,45 +2992,6 @@ alias b = __b ;
 
 // expansion at /usr/include/dmd/phobos/std/functional.d(224,20)
 a == b
-
-// expansion at /usr/include/dmd/phobos/std/internal/memory.d(40,18)
-onOutOfMemoryError();
-
-// expansion at
-.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
-
-// expansion at
-.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
-
-// expansion at
-.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
-
-// expansion at /usr/include/dmd/phobos/std/functional.d(222,13)
-alias a = __a ;
-
-// expansion at /usr/include/dmd/phobos/std/functional.d(223,13)
-alias b = __b ;
-
-// expansion at /usr/include/dmd/phobos/std/functional.d(224,20)
-a == b
-
-// expansion at /usr/include/dmd/phobos/std/functional.d(222,13)
-alias a = __a ;
-
-// expansion at /usr/include/dmd/phobos/std/functional.d(223,13)
-alias b = __b ;
-
-// expansion at /usr/include/dmd/phobos/std/functional.d(224,20)
-a == b
-
-// expansion at
-.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
-
-// expansion at
-.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
-
-// expansion at
-.object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
 
 // expansion at source/geometry/surface.d(21,9)
 ulong[2LU] offsets;
@@ -3050,18 +3050,6 @@ glDisableVertexAttribArray(1LU);
 // expansion at
 .object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
 
-// expansion at /usr/include/dmd/phobos/std/typecons.d(539,31)
-lhs == rhs
-
-// expansion at /usr/include/dmd/phobos/std/typecons.d(539,31)
-lhs == rhs
-
-// expansion at /usr/include/dmd/phobos/std/typecons.d(539,31)
-lhs < rhs
-
-// expansion at /usr/include/dmd/phobos/std/typecons.d(539,31)
-lhs < rhs
-
 // expansion at
 .object.size_t h = 0;foreach (i, T; typeof(p.tupleof))    static if(is(T* : const(.object.Object)*))         h = h * 33 + typeid(const(.object.Object)).getHash(cast(const void*)&p.tupleof[i]);    else         h = h * 33 + typeid(T).getHash(cast(const void*)&p.tupleof[i]);return h;
 
@@ -3096,4 +3084,16 @@ lhs < rhs
                     ret;
                 }
 
+
+// expansion at /usr/include/dmd/phobos/std/typecons.d(539,31)
+lhs == rhs
+
+// expansion at /usr/include/dmd/phobos/std/typecons.d(539,31)
+lhs == rhs
+
+// expansion at /usr/include/dmd/phobos/std/typecons.d(539,31)
+lhs < rhs
+
+// expansion at /usr/include/dmd/phobos/std/typecons.d(539,31)
+lhs < rhs
 

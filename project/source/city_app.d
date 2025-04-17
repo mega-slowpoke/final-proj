@@ -6,11 +6,13 @@ import std.file : exists, mkdirRecurse, write;
 import std.path : buildPath;
 import core;
 import mesh, linear, scene, materials, geometry;
-import cityrenderer;
+import cityrenderer, light;
 import platform;
+
 
 import bindbc.sdl;
 import bindbc.opengl;
+import std.math;
 
 /// The main city graphics application.
 struct CityGraphicsApp {
@@ -18,6 +20,8 @@ struct CityGraphicsApp {
     bool mRenderWireframe = false;
     SDL_GLContext mContext;
     SDL_Window* mWindow;
+    DirectionalLight mSunLight;
+
 
     // Scene
     SceneTree mSceneTree;
@@ -30,10 +34,7 @@ struct CityGraphicsApp {
 
     /// Setup OpenGL and any libraries
     this(int major_ogl_version, int minor_ogl_version) {
-        try {
-            writeln("DEBUG CONSTRUCTOR: Starting constructor");
-            
-            writeln("DEBUG CONSTRUCTOR: Setting up SDL OpenGL");
+        try {            
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major_ogl_version);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_ogl_version);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -41,7 +42,6 @@ struct CityGraphicsApp {
             // We want to request a double buffer for smooth updating.
             SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
             SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-            writeln("DEBUG CONSTRUCTOR: SDL attributes set");
 
             // Create an application window using OpenGL that supports SDL
             writeln("DEBUG CONSTRUCTOR: Creating SDL window");
@@ -51,45 +51,32 @@ struct CityGraphicsApp {
                                       800,
                                       600,
                                       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
-            writeln("DEBUG CONSTRUCTOR: SDL window created");
 
             writeln("DEBUG CONSTRUCTOR: Creating OpenGL context");
             mContext = SDL_GL_CreateContext(mWindow);
-            writeln("DEBUG CONSTRUCTOR: OpenGL context created");
 
-            // Load OpenGL Function calls
-            writeln("DEBUG CONSTRUCTOR: Loading OpenGL library");
             auto retVal = LoadOpenGLLib();
-            writeln("DEBUG CONSTRUCTOR: OpenGL library loaded");
 
-            writeln("DEBUG CONSTRUCTOR: Getting OpenGL version");
             GetOpenGLVersionInfo();
-            writeln("DEBUG CONSTRUCTOR: OpenGL version checked");
 
-            writeln("DEBUG CONSTRUCTOR: Creating renderer");
             mRenderer = new Renderer(mWindow, 800, 600);
-            writeln("DEBUG CONSTRUCTOR: Renderer created");
 
-            writeln("DEBUG CONSTRUCTOR: Creating camera");
             mCamera = new Camera();
-            writeln("DEBUG CONSTRUCTOR: Camera created");
-            
-            writeln("DEBUG CONSTRUCTOR: Positioning camera");
             mCamera.SetCameraPosition(0.0f, 15.0f, 40.0f);
-            writeln("DEBUG CONSTRUCTOR: Camera positioned");
-            
-            writeln("DEBUG CONSTRUCTOR: Updating camera view matrix");
             mCamera.UpdateViewMatrix();
-            writeln("DEBUG CONSTRUCTOR: Camera view matrix updated");
 
-            writeln("DEBUG CONSTRUCTOR: Creating scene tree");
             mSceneTree = new SceneTree("root");
-            writeln("DEBUG CONSTRUCTOR: Scene tree created");
             
-            writeln("DEBUG CONSTRUCTOR: Creating city generator");
             mCityGenerator = new CityGenerator(mSceneTree);
-            writeln("DEBUG CONSTRUCTOR: City generator created");
             
+            mSunLight = new DirectionalLight(
+                vec3(0.5f, 1.0f, 0.8f), // Direction (morning sun)
+                vec3(1.0f, 0.95f, 0.8f), // warm light
+                1.0f,  
+                true   
+            );
+
+
             writeln("DEBUG CONSTRUCTOR: Constructor completed successfully");
         }
         catch (Exception e) {
@@ -215,19 +202,30 @@ struct CityGraphicsApp {
         }
     }
 
-    /// Update gamestate
     void Update() {
         try {
+            // Update sun position
+            mSunLight.Update();
+            
             // Update camera view matrix
             mCamera.UpdateViewMatrix();
             
             // Update all meshes' uniforms
             foreach (node; mSceneTree.GetRootNode().mChildren) {
                 if (MeshNode meshNode = cast(MeshNode)node) {
-                    // Update the view matrix with current camera
                     auto material = meshNode.GetMaterial();
                     if ("uView" in material.mUniformMap) {
                         material.mUniformMap["uView"].Set(mCamera.mViewMatrix.DataPtr());
+                    }
+                    
+                    if ("uLightDirection" in material.mUniformMap) {
+                        material.mUniformMap["uLightDirection"].Set(mSunLight.mDirection.DataPtr());
+                    }
+                    if ("uLightColor" in material.mUniformMap) {
+                        material.mUniformMap["uLightColor"].Set(mSunLight.mColor.DataPtr());
+                    }
+                    if ("uLightIntensity" in material.mUniformMap) {
+                        material.mUniformMap["uLightIntensity"].Set(mSunLight.mIntensity);
                     }
                 }
             }
@@ -245,6 +243,37 @@ struct CityGraphicsApp {
         }
 
         mRenderer.Render(mSceneTree, mCamera);
+        RenderSun();
+    }
+
+
+    void RenderSun() {
+        // Don't render sun if it's below the horizon
+        if (mSunLight.mDirection.y < 0.0f) {
+            return;
+        }
+        
+        // Calculate sun position in screen space
+        vec3 sunPos = mCamera.mEyePosition - mSunLight.mDirection * 100.0f;
+        
+        vec4 projectedSun = mCamera.mProjectionMatrix * mCamera.mViewMatrix * vec4(sunPos, 1.0);
+        
+        // Skip if behind the camera
+        if (projectedSun.z < 0.0f) {
+            return;
+        }
+        
+        float x = projectedSun.x / projectedSun.w;
+        float y = projectedSun.y / projectedSun.w;
+        
+        // Skip if outside visible area
+        if (abs(x) > 1.0f || abs(y) > 1.0f) {
+            return;
+        }
+        
+        int screenX = cast(int)((x + 1.0f) * 0.5f * 800.0f);
+        int screenY = cast(int)((1.0f - (y + 1.0f) * 0.5f) * 600.0f);
+
     }
 
     /// Process 1 frame

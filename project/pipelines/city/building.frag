@@ -1,3 +1,4 @@
+// building.frag - Modified to include lighting
 #version 410 core
 
 in vs{
@@ -8,13 +9,15 @@ in vs{
 
 out vec4 fragColor;
 
-
-
 uniform vec3 uBaseColor;
-
 uniform float uWindowDensity = 0.5;
 uniform float uWindowBrightness = 0.8;
 uniform float uTime = 0.0;
+
+// Lighting uniforms
+uniform vec3 uLightDirection;     // Direction of the sun
+uniform vec3 uLightColor;         // Color of the sunlight 
+uniform float uLightIntensity;    // Intensity of the sunlight
 
 // Better noise function for more natural randomness
 float hash(vec2 p) {
@@ -85,10 +88,14 @@ vec3 windowPattern(vec3 position) {
     float blinkOffset = seed * 20.0;     // Varied blink timing
     float blink = smoothstep(0.3, 0.7, sin(uTime * blinkSpeed + blinkOffset) * 0.5 + 0.5);
     
+    // Day/night lighting factor - if sun is below horizon, more windows are lit
+    // Use the sun's Y component to determine day/night
+    float dayNightFactor = 1.0 - smoothstep(-0.2, 0.5, uLightDirection.y);
+    
     // Determine window color based on state
     vec3 windowColor;
     
-    if (state < 0.6 * uWindowDensity * (0.7 + 0.3 * heightFactor)) {
+    if (state < (0.6 * uWindowDensity * (0.7 + 0.3 * heightFactor) * (1.0 + dayNightFactor))) {
         // Lit window - with varied colors
         float warmth = fract(seed * 7.89); // How warm/cool the light is
         
@@ -109,32 +116,61 @@ vec3 windowPattern(vec3 position) {
         }
     } else {
         // Dark window - blue tinted reflection
-        windowColor = vec3(0.1, 0.15, 0.25) * 0.5;
+        // Reflect more sky light during day
+        float skyReflection = max(0.0, uLightDirection.y * 0.5 + 0.5);
+        windowColor = vec3(0.1, 0.15, 0.25) * (0.5 + skyReflection * 0.5);
     }
     
     return windowColor;
 }
 
 void main() {
+    // Normal lighting calculations
+    vec3 normal = normalize(fs_in.normal);
+    vec3 lightDir = normalize(-uLightDirection); // Light direction points from surface to light
+    
     // Get window pattern
     vec3 windowColor = windowPattern(fs_in.vertexColor);
     
-    // Ambient light for the rest of the building
-    float ambientStrength = 0.3;
-    vec3 ambient = ambientStrength * uBaseColor;
+    // Calculate base lighting
+    float ambient = 0.3; // Ambient light level
     
-    // Diffuse light
-    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-    vec3 norm = normalize(fs_in.normal);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * uBaseColor;
+    // Diffuse lighting - use the dot product between normal and light direction
+    float diffuseFactor = max(dot(normal, lightDir), 0.0);
     
-    // Use window color for windows, and base building color for the rest
-    vec3 result = windowColor;
+    // Use light color and intensity for diffuse component
+    vec3 diffuse = diffuseFactor * uLightColor * uLightIntensity;
     
-    // If it's not a window (color is very dark), use building lighting
-    if (length(windowColor) < 0.1) {
-        result = ambient + diffuse;
+    // Combine ambient and diffuse for base lighting
+    vec3 lighting = ambient + diffuse;
+    
+    // Use window color for windows, and base building color with lighting for the rest
+    vec3 result;
+    
+    // If it's a window (color is not very dark)
+    if (length(windowColor) > 0.1) {
+        // Apply less direct lighting to windows (they emit light themselves)
+        result = windowColor * (ambient + diffuseFactor * 0.5);
+    } else {
+        // Apply full lighting to building surfaces
+        result = uBaseColor * lighting;
+        
+        // Add slight blue tint to shadowed areas (sky reflection)
+        if (diffuseFactor < 0.1) {
+            result += vec3(0.0, 0.05, 0.1) * (1.0 - diffuseFactor) * 0.5;
+        }
+    }
+    
+    // Apply time-of-day tinting
+    // Dawn/dusk - orange tint
+    if (uLightDirection.y > -0.2 && uLightDirection.y < 0.2) {
+        float dawnDuskFactor = 1.0 - abs(uLightDirection.y * 5.0);
+        result += vec3(0.3, 0.1, 0.0) * dawnDuskFactor * 0.3;
+    }
+    // Night - blue tint
+    else if (uLightDirection.y < 0.0) {
+        float nightFactor = smoothstep(0.0, -0.5, uLightDirection.y);
+        result = mix(result, result * vec3(0.7, 0.8, 1.0), nightFactor * 0.5);
     }
     
     // Final color

@@ -89,24 +89,22 @@ class SurfaceGround : ISurface {
 
 
 
-/// Ground material with green color
-// Modified GroundMaterial class in cityrenderer.d
 class GroundMaterial : IMaterial {
-    vec3 mColor;            // Base ground/grass color
-    vec3 mRoadColor;        // Road color
-    vec3 mSidewalkColor;    // Sidewalk color
-    vec3 mZebraColor;       // Zebra crossing color
-    float mBlockSize;       // Size of city blocks
-    float mStreetWidth;     // Width of streets
+    vec3 mBaseColor;           
+    vec3 mRoadColor;       
+    vec3 mSidewalkColor;    
+    vec3 mZebraColor;       
+    float mBlockSize;      
+    float mStreetWidth;     
     
     /// Constructor
     this(string pipelineName) {
         super(pipelineName);
         // Default colors
-        mColor = vec3(0.2f, 0.7f, 0.2f);           // Green for grass
-        mRoadColor = vec3(0.3f, 0.3f, 0.3f);        // Dark gray for asphalt
-        mSidewalkColor = vec3(0.75f, 0.75f, 0.7f);  // Light gray for sidewalks
-        mZebraColor = vec3(0.9f, 0.9f, 0.9f);       // White for zebra crossings
+        mBaseColor = vec3(0.2f, 0.7f, 0.2f);           
+        mRoadColor = vec3(0.3f, 0.3f, 0.3f);        
+        mSidewalkColor = vec3(0.75f, 0.75f, 0.7f);  
+        mZebraColor = vec3(0.9f, 0.9f, 0.9f);      
     }
     
     /// Set the city layout parameters (from city generator)
@@ -122,7 +120,7 @@ class GroundMaterial : IMaterial {
         
         // Set basic uniforms for our mesh if they exist in the shader
         if("uBaseColor" in mUniformMap) {
-            mUniformMap["uBaseColor"].Set(mColor.DataPtr());
+            mUniformMap["uBaseColor"].Set(mBaseColor.DataPtr());
         }
         
         // Set road-specific uniforms
@@ -148,4 +146,3 @@ class GroundMaterial : IMaterial {
     }
 }
 
-// Modified createGround function in CityGenerator class
