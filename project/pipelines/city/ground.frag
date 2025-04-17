@@ -1,4 +1,3 @@
-// ground.frag - Modified to include lighting
 #version 410 core
 
 in vs{

@@ -1,4 +1,3 @@
-// building.frag - Modified to include lighting
 #version 410 core
 
 in vs{
@@ -133,7 +132,7 @@ void main() {
     vec3 windowColor = windowPattern(fs_in.vertexColor);
     
     // Calculate base lighting
-    float ambient = 0.3; // Ambient light level
+    float ambient = 0.5; // Ambient light level
     
     // Diffuse lighting - use the dot product between normal and light direction
     float diffuseFactor = max(dot(normal, lightDir), 0.0);

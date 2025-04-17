@@ -20,7 +20,10 @@ class DirectionalLight {
     
     void Update() {
         if (mAnimate) {
-            // Create a day/night cycle by rotating the light direction
+            // For debugging, set a fixed daytime position
+            mDirection = vec3(0.2f, 0.8f, 0.4f).Normalize();
+            
+            /* Original animation code, comment out for now
             import std.datetime : Clock;
             float time = (Clock.currTime().toUnixTime() % 86400) / 86400.0f; // 0-1 over 24h
             float angle = time * (2 * 3.14159f); // 0-2π
@@ -29,6 +32,7 @@ class DirectionalLight {
             float y = sin(angle);
             float z = cos(angle);
             mDirection = vec3(0.5f, y, z).Normalize();
+            */
         }
     }
 }

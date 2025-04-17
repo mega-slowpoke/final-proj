@@ -6,7 +6,7 @@ import std.file : exists, mkdirRecurse, write;
 import std.path : buildPath;
 import core;
 import mesh, linear, scene, materials, geometry;
-import cityrenderer, light;
+import cityrenderer, light, sun;
 import platform;
 
 
@@ -20,8 +20,16 @@ struct CityGraphicsApp {
     bool mRenderWireframe = false;
     SDL_GLContext mContext;
     SDL_Window* mWindow;
+    
     DirectionalLight mSunLight;
 
+    bool mSunInitialized = false;
+GLuint mSunVAO;
+GLuint mSunVBO;
+Pipeline mSunPipeline;
+
+    // MeshNode mSunNode;
+    // Pipeline mSunPipeline;
 
     // Scene
     SceneTree mSceneTree;
@@ -70,12 +78,11 @@ struct CityGraphicsApp {
             mCityGenerator = new CityGenerator(mSceneTree);
             
             mSunLight = new DirectionalLight(
-                vec3(0.5f, 1.0f, 0.8f), // Direction (morning sun)
+                vec3(0.2f, 0.8f, 0.4f), // Direction (strong Y component for high sun)
                 vec3(1.0f, 0.95f, 0.8f), // warm light
-                1.0f,  
+                1.5f,  // Increased intensity
                 true   
             );
-
 
             writeln("DEBUG CONSTRUCTOR: Constructor completed successfully");
         }
@@ -176,6 +183,31 @@ struct CityGraphicsApp {
             writeln("DEBUG: SetupScene - Updating matrices");
             updateMatrices();
             
+
+            // // Setup sun rendering
+            // if (!exists("pipelines/city/sun.vert") || !exists("pipelines/city/sun.frag")) {
+            //     writeln("Creating sun shader files...");
+            //     // Write the shader files (code omitted - create them manually)
+            // }
+    
+            // // Create sun pipeline
+            // mSunPipeline = new Pipeline("sun", 
+            //                         "./pipelines/city/sun.vert", 
+            //                         "./pipelines/city/sun.frag");
+        
+            // // Create sun surface and material
+            // ISurface sunSurface = new SurfaceSun(5.0f);
+            // vec3 sunColor = vec3(1.0f, 0.9f, 0.7f);
+            // IMaterial sunMaterial = new SunMaterial("sun", sunColor);
+            
+            // sunMaterial.AddUniform(new Uniform("uModel", "mat4", null));
+            // sunMaterial.AddUniform(new Uniform("uView", "mat4", null));
+            // sunMaterial.AddUniform(new Uniform("uProjection", "mat4", null));
+            // sunMaterial.AddUniform(new Uniform("uSunColor", "vec3", sunColor.DataPtr()));
+            
+            // mSunNode = new MeshNode("sun", sunSurface, sunMaterial);
+            // mSceneTree.GetRootNode().AddChildSceneNode(mSunNode);
+
             writeln("DEBUG: SetupScene - Scene setup complete");
         } catch (Exception e) {
             writeln("Error in SetupScene: ", e.msg);
@@ -247,34 +279,98 @@ struct CityGraphicsApp {
     }
 
 
-    void RenderSun() {
-        // Don't render sun if it's below the horizon
-        if (mSunLight.mDirection.y < 0.0f) {
-            return;
-        }
-        
-        // Calculate sun position in screen space
-        vec3 sunPos = mCamera.mEyePosition - mSunLight.mDirection * 100.0f;
-        
-        vec4 projectedSun = mCamera.mProjectionMatrix * mCamera.mViewMatrix * vec4(sunPos, 1.0);
-        
-        // Skip if behind the camera
-        if (projectedSun.z < 0.0f) {
-            return;
-        }
-        
-        float x = projectedSun.x / projectedSun.w;
-        float y = projectedSun.y / projectedSun.w;
-        
-        // Skip if outside visible area
-        if (abs(x) > 1.0f || abs(y) > 1.0f) {
-            return;
-        }
-        
-        int screenX = cast(int)((x + 1.0f) * 0.5f * 800.0f);
-        int screenY = cast(int)((1.0f - (y + 1.0f) * 0.5f) * 600.0f);
-
+void RenderSun() {
+    writeln("DEBUG: RenderSun called");
+    
+    // Don't render sun if it's below the horizon
+    if (mSunLight.mDirection.y < 0.0f) {
+        writeln("DEBUG: Sun below horizon, not rendering");
+        return;
     }
+    
+    // Static VAO and VBO for the sun
+    static GLuint sunVAO = 0;
+    static GLuint sunVBO = 0;
+    
+    // Create sun mesh if not already done
+    if (sunVAO == 0) {
+        // Create a simple quad for the sun
+        GLfloat[] vertices = [
+            -1.0f, -1.0f, 0.0f,  // Vertex 1 (positions)
+             1.0f, -1.0f, 0.0f,  // Vertex 2
+             1.0f,  1.0f, 0.0f,  // Vertex 3
+            -1.0f,  1.0f, 0.0f   // Vertex 4
+        ];
+        
+        // Create VAO
+        glGenVertexArrays(1, &sunVAO);
+        glBindVertexArray(sunVAO);
+        
+        // Create VBO
+        glGenBuffers(1, &sunVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, sunVBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.length * GLfloat.sizeof, vertices.ptr, GL_STATIC_DRAW);
+        
+        // Position attribute
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * GLfloat.sizeof, null);
+        
+        glBindVertexArray(0);
+    }
+    
+    // Calculate position of sun in world space
+    vec3 sunWorldPos = mCamera.mEyePosition - mSunLight.mDirection * 50.0f;
+    
+    // Create a simple shader for the sun if it doesn't exist
+    if (!("sun_simple" in Pipeline.sPipeline)) {
+        // Create temporary shader files if they don't exist
+        if (!exists("pipelines/city/sun_simple.vert")) {
+            write("pipelines/city/sun_simple.vert", 
+                "#version 410 core\n" ~
+                "layout(location=0) in vec3 aPosition;\n" ~
+                "uniform mat4 uMVP;\n" ~
+                "void main() {\n" ~
+                "    gl_Position = uMVP * vec4(aPosition, 1.0);\n" ~
+                "}\n");
+        }
+        
+        if (!exists("pipelines/city/sun_simple.frag")) {
+            write("pipelines/city/sun_simple.frag", 
+                "#version 410 core\n" ~
+                "out vec4 fragColor;\n" ~
+                "uniform vec3 uSunColor;\n" ~
+                "void main() {\n" ~
+                "    fragColor = vec4(uSunColor, 1.0);\n" ~
+                "}\n");
+        }
+        
+        new Pipeline("sun_simple", 
+                    "pipelines/city/sun_simple.vert", 
+                    "pipelines/city/sun_simple.frag");
+    }
+    
+    // Use the simple sun shader
+    PipelineUse("sun_simple");
+    
+    // Set shader uniforms
+    GLint mvpLoc = glGetUniformLocation(Pipeline.sPipeline["sun_simple"], "uMVP");
+    GLint colorLoc = glGetUniformLocation(Pipeline.sPipeline["sun_simple"], "uSunColor");
+    
+    // Calculate model-view-projection matrix
+    mat4 model = MatrixMakeTranslation(sunWorldPos) * MatrixMakeScale(vec3(2.0f, 2.0f, 2.0f));
+    mat4 mvp = mCamera.mProjectionMatrix * mCamera.mViewMatrix * model;
+    
+    // Set uniforms
+    glUniformMatrix4fv(mvpLoc, 1, GL_TRUE, mvp.DataPtr());
+    glUniform3f(colorLoc, 1.0f, 0.9f, 0.5f); // Yellow-orange sun
+    
+    // Draw sun
+    glBindVertexArray(sunVAO);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindVertexArray(0);
+    
+    writeln("DEBUG: Drew sun at position: ", sunWorldPos);
+}
 
     /// Process 1 frame
     void AdvanceFrame() {
