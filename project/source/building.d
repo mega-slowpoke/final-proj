@@ -107,38 +107,20 @@ class SurfaceBuilding : ISurface {
 
 /// Building material that allows for color variations
 class BuildingMaterial : IMaterial {
-    vec3 mBaseColor;
-    float mWindowDensity;    
-    float mWindowBrightness; 
+    // Building colors (variations of gray)
+    vec3 mColor;
 
     /// Constructor with a color parameter
-    this(string pipelineName, vec3 color, float windowDensity= 0.5f, float windowBrightness = 0.5f) {
+    this(string pipelineName, vec3 color) {
         super(pipelineName);
-        mBaseColor = color;
-        mWindowDensity = windowDensity;
-        mWindowBrightness = windowBrightness;
+        mColor = color;
     }
 
     override void Update() {
         PipelineUse(mPipelineName);
-    
+        
         if("uBaseColor" in mUniformMap) {
-            mUniformMap["uBaseColor"].Set(mBaseColor.DataPtr());
-        }
-        
-        if("uWindowDensity" in mUniformMap) {
-            mUniformMap["uWindowDensity"].Set(mWindowDensity);
-        }
-        
-        if("uWindowBrightness" in mUniformMap) {
-            mUniformMap["uWindowBrightness"].Set(mWindowBrightness);
-        }
-        
-        if("uTime" in mUniformMap) {
-            // Simple animation for window lights blinking
-            import std.datetime : Clock;
-            float time = (Clock.currTime().toUnixTime() % 1000) / 10.0f;
-            mUniformMap["uTime"].Set(time);
+            mUniformMap["uBaseColor"].Set(mColor.DataPtr());
         }
     }
 }

@@ -132,10 +132,6 @@ class CityGenerator {
             groundMaterial.AddUniform(new Uniform("uZebraWidth", 0.3f));
             groundMaterial.AddUniform(new Uniform("uZebraStripeWidth", 0.15f));
             
-            groundMaterial.AddUniform(new Uniform("uLightDirection", "vec3", null));
-            groundMaterial.AddUniform(new Uniform("uLightColor", "vec3", null));
-            groundMaterial.AddUniform(new Uniform("uLightIntensity", 1.0f));
-
             MeshNode groundNode = new MeshNode("ground", groundSurface, groundMaterial);
             groundNode.mModelMatrix = MatrixMakeTranslation(vec3(0.0f, 0.0f, 0.0f));
             
@@ -158,6 +154,7 @@ class CityGenerator {
         float colorValue = 0.4f + (((x + z) % 5) / 10.0f); // Deterministic color
         vec3 buildingColor = vec3(colorValue, colorValue, colorValue);
         
+        // Create building mesh
         ISurface buildingSurface = new SurfaceBuilding(buildingWidth, buildingHeight, buildingDepth);
         IMaterial buildingMaterial = new BuildingMaterial("building", buildingColor);
         
@@ -166,11 +163,6 @@ class CityGenerator {
         buildingMaterial.AddUniform(new Uniform("uProjection", "mat4", null));
         buildingMaterial.AddUniform(new Uniform("uBaseColor", "vec3", buildingColor.DataPtr()));
         
-        // light
-        buildingMaterial.AddUniform(new Uniform("uLightDirection", "vec3", null));
-        buildingMaterial.AddUniform(new Uniform("uLightColor", "vec3", null));
-        buildingMaterial.AddUniform(new Uniform("uLightIntensity", 1.0f));
-
         string buildingName = "building_" ~ x.to!string ~ "_" ~ z.to!string;
         MeshNode buildingNode = new MeshNode(buildingName, buildingSurface, buildingMaterial);
         buildingNode.mModelMatrix = MatrixMakeTranslation(vec3(posX, 0.0f, posZ));
@@ -183,25 +175,25 @@ class CityGenerator {
         float buildingHeight = 5.0f + (x % 4) + (z % 5); // Make cylindrical buildings taller
         float radius = mBlockSize * 0.4f;
         
+        // Calculate building position
         float posX = (x * (mBlockSize + mStreetWidth)) - (mGroundSize / 2) + (mBlockSize / 2);
         float posZ = (z * (mBlockSize + mStreetWidth)) - (mGroundSize / 2) + (mBlockSize / 2);
         
+        // Create building color - different tint for cylindrical buildings
         float colorValue = 0.4f + (((x + z) % 5) / 10.0f);
         vec3 buildingColor = vec3(colorValue, colorValue * 0.95f, colorValue * 0.9f);
         
+        // Create cylindrical building mesh
         ISurface buildingSurface = new SurfaceCylindricalBuilding(radius, buildingHeight, 16);
         IMaterial buildingMaterial = new BuildingMaterial("building", buildingColor);
         
+        // Add uniforms to the building material
         buildingMaterial.AddUniform(new Uniform("uModel", "mat4", null));
         buildingMaterial.AddUniform(new Uniform("uView", "mat4", null));
         buildingMaterial.AddUniform(new Uniform("uProjection", "mat4", null));
         buildingMaterial.AddUniform(new Uniform("uBaseColor", "vec3", buildingColor.DataPtr()));
         
-        // light
-        buildingMaterial.AddUniform(new Uniform("uLightDirection", "vec3", null));
-        buildingMaterial.AddUniform(new Uniform("uLightColor", "vec3", null));
-        buildingMaterial.AddUniform(new Uniform("uLightIntensity", 1.0f));
-
+        // Create building node and add to scene
         string buildingName = "building_cyl_" ~ x.to!string ~ "_" ~ z.to!string;
         MeshNode buildingNode = new MeshNode(buildingName, buildingSurface, buildingMaterial);
         buildingNode.mModelMatrix = MatrixMakeTranslation(vec3(posX, 0.0f, posZ));
