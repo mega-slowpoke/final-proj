@@ -8,15 +8,24 @@ in vs{
 
 out vec4 fragColor;
 
+// Ground colors
 uniform vec3 uBaseColor;       // Ground/grass color
 uniform vec3 uRoadColor;       // Road color
 uniform vec3 uSidewalkColor;   // Sidewalk color
 uniform vec3 uZebraColor;      // Zebra crossing color
+
+// City layout parameters
 uniform float uBlockSize;      // Size of city blocks
 uniform float uStreetWidth;    // Width of streets
 uniform float uSidewalkWidth;  // Width of sidewalks
 uniform float uZebraWidth;     // Width of zebra crossings
 uniform float uZebraStripeWidth; // Width of individual zebra stripes
+
+// Moon light properties
+uniform vec3 uLightDirection = vec3(0.5, -0.7, 0.3);
+uniform vec3 uLightColor = vec3(0.6, 0.7, 0.9);
+uniform float uAmbientStrength = 0.1;
+uniform float uDiffuseStrength = 0.3;
 
 void main()
 {
@@ -55,42 +64,52 @@ void main()
     // Create zebra pattern
     float zebraPattern = 0.0;
     if (isVerticalRoad && abs(cellPos.y - (uBlockSize - uZebraWidth)) < uZebraWidth && !isIntersectionZone) {
-        // Horizontal zebra crossing on vertical road
         zebraPattern = step(0.5, mod(cellPos.x / uZebraStripeWidth, 1.0));
     } else if (isHorizontalRoad && abs(cellPos.x - (uBlockSize - uZebraWidth)) < uZebraWidth && !isIntersectionZone) {
-        // Vertical zebra crossing on horizontal road
         zebraPattern = step(0.5, mod(cellPos.y / uZebraStripeWidth, 1.0));
     }
     
-    // Determine final color
-    vec3 color;
+    // Determine base color before lighting - darker for night
+    vec3 baseColor;
     if (zebraPattern > 0.5) {
-        // Zebra stripe
-        color = uZebraColor;
+        baseColor = uZebraColor * 0.7; // Dimmer at night
     } else if (isIntersectionZone) {
-        // Road intersection
-        color = uRoadColor;
+        baseColor = uRoadColor * 0.7; // Dimmer at night
     } else if (isVerticalRoad || isHorizontalRoad) {
-        // Regular road
-        color = uRoadColor;
+        baseColor = uRoadColor * 0.7; // Dimmer at night
         
-        // Add faint road lines
+        // Add faint road lines - brighter for night visibility
         if (isVerticalRoad && abs(cellPos.x - (uBlockSize + uStreetWidth/2.0)) < 0.03) {
-            color = vec3(0.9, 0.9, 0.2); // Yellow road line
+            baseColor = vec3(0.8, 0.8, 0.2) * 0.5; // Dim yellow road line
         } else if (isHorizontalRoad && abs(cellPos.y - (uBlockSize + uStreetWidth/2.0)) < 0.03) {
-            color = vec3(0.9, 0.9, 0.2); // Yellow road line
+            baseColor = vec3(0.8, 0.8, 0.2) * 0.5; // Dim yellow road line
         }
     } else if (isVerticalSidewalk || isHorizontalSidewalk) {
-        // Sidewalk
-        color = uSidewalkColor;
+        baseColor = uSidewalkColor * 0.6; // Dimmer at night
     } else {
-        // Grass or regular ground
-        color = uBaseColor;
+        baseColor = uBaseColor * 0.3; // Very dim for grass/ground at night
     }
+    
+    // Apply lighting calculations
+    vec3 norm = normalize(fs_in.normal);
+    vec3 lightDir = normalize(-uLightDirection);
+    
+    // Calculate ambient component
+    vec3 ambient = uAmbientStrength * uLightColor;
+    
+    // Calculate diffuse component
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = uDiffuseStrength * diff * uLightColor;
+    
+    // Combine lighting with base color
+    vec3 result = baseColor * (ambient + diffuse);
     
     // Add some subtle noise to break up uniformity
     float noise = fract(sin(dot(fs_in.texCoord, vec2(12.9898, 78.233))) * 43758.5453);
-    color *= 0.95 + 0.05 * noise;
+    result *= 0.95 + 0.05 * noise;
     
-    fragColor = vec4(color, 1.0);
+    // Add some subtle blue tint for night
+    result = mix(result, vec3(0.1, 0.2, 0.4), 0.1);
+    
+    fragColor = vec4(result, 1.0);
 }

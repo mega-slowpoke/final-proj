@@ -22,7 +22,7 @@ class Camera{
 
         // Setup our perspective projection matrix
         // NOTE: Assumption made here is our window is always 640/480 or the similar aspect ratio.
-        mProjectionMatrix = MatrixMakePerspective(90.0f.ToRadians,480.0f/640.0f, 0.1f, 1000.0f);
+        mProjectionMatrix = MatrixMakePerspective(60.0f.ToRadians,480.0f/640.0f, 0.1f, 1000.0f);
 
         /// Initial Camera setup
         mEyePosition    = vec3(0.0f, 0.0f, 0.0f);

@@ -104,28 +104,6 @@ class SurfaceBuilding : ISurface {
 }
 
 
-
-/// Building material that allows for color variations
-class BuildingMaterial : IMaterial {
-    // Building colors (variations of gray)
-    vec3 mColor;
-
-    /// Constructor with a color parameter
-    this(string pipelineName, vec3 color) {
-        super(pipelineName);
-        mColor = color;
-    }
-
-    override void Update() {
-        PipelineUse(mPipelineName);
-        
-        if("uBaseColor" in mUniformMap) {
-            mUniformMap["uBaseColor"].Set(mColor.DataPtr());
-        }
-    }
-}
-
-
 class SurfaceCylindricalBuilding : ISurface {
     GLuint mVBO;
     GLuint mIBO;
@@ -262,16 +240,62 @@ class SurfaceCylindricalBuilding : ISurface {
 }
 
 
-/// A material for buildings with windows
+class BuildingMaterial : IMaterial {
+    // Building colors 
+    vec3 mColor;
+    // Moon light properties
+    vec3 mLightDirection = vec3(0.5f, -0.7f, 0.3f);
+    vec3 mLightColor = vec3(0.6f, 0.7f, 0.9f);  // Cool moonlight color
+    float mAmbientStrength = 0.1f;  // Low ambient light for night
+    float mDiffuseStrength = 0.3f;  // Lower diffuse light for moonlight
+
+    /// Constructor with a color parameter
+    this(string pipelineName, vec3 color) {
+        super(pipelineName);
+        mColor = color;
+    }
+
+    override void Update() {
+        PipelineUse(mPipelineName);
+        
+        if("uBaseColor" in mUniformMap) {
+            mUniformMap["uBaseColor"].Set(mColor.DataPtr());
+        }
+        
+        // Set light uniforms
+        if("uLightDirection" in mUniformMap) {
+            mUniformMap["uLightDirection"].Set(mLightDirection.DataPtr());
+        }
+        
+        if("uLightColor" in mUniformMap) {
+            mUniformMap["uLightColor"].Set(mLightColor.DataPtr());
+        }
+        
+        if("uAmbientStrength" in mUniformMap) {
+            mUniformMap["uAmbientStrength"].Set(mAmbientStrength);
+        }
+        
+        if("uDiffuseStrength" in mUniformMap) {
+            mUniformMap["uDiffuseStrength"].Set(mDiffuseStrength);
+        }
+    }
+}
+
+
 class TexturedBuildingMaterial : IMaterial {
     // Building base color
     vec3 mBaseColor;
-    // Window lighting pattern
-    float mWindowDensity = 0.5f;
-    float mWindowBrightness = 0.8f;
+    // Window lighting pattern - more windows lit at night
+    float mWindowDensity = 0.7f;  // Higher window density at night
+    float mWindowBrightness = 0.9f;  // Brighter windows for contrast
+    // Moon light properties
+    vec3 mLightDirection = vec3(0.5f, -0.7f, 0.3f);
+    vec3 mLightColor = vec3(0.6f, 0.7f, 0.9f);  
+    float mAmbientStrength = 0.1f;  
+    float mDiffuseStrength = 0.3f;  
     
     /// Constructor with color parameters
-    this(string pipelineName, vec3 baseColor, float windowDensity = 0.5f, float windowBrightness = 0.8f) {
+    this(string pipelineName, vec3 baseColor, float windowDensity = 0.7f, float windowBrightness = 0.9f) {
         super(pipelineName);
         mBaseColor = baseColor;
         mWindowDensity = windowDensity;
@@ -301,6 +325,23 @@ class TexturedBuildingMaterial : IMaterial {
             import std.datetime : Clock;
             float time = (Clock.currTime().toUnixTime() % 1000) / 10.0f;
             mUniformMap["uTime"].Set(time);
+        }
+        
+        // Set light uniforms
+        if("uLightDirection" in mUniformMap) {
+            mUniformMap["uLightDirection"].Set(mLightDirection.DataPtr());
+        }
+        
+        if("uLightColor" in mUniformMap) {
+            mUniformMap["uLightColor"].Set(mLightColor.DataPtr());
+        }
+        
+        if("uAmbientStrength" in mUniformMap) {
+            mUniformMap["uAmbientStrength"].Set(mAmbientStrength);
+        }
+        
+        if("uDiffuseStrength" in mUniformMap) {
+            mUniformMap["uDiffuseStrength"].Set(mDiffuseStrength);
         }
     }
 }

@@ -8,15 +8,19 @@ in vs{
 
 out vec4 fragColor;
 
-
-
+// Building properties
 uniform vec3 uBaseColor;
-
 uniform float uWindowDensity = 0.5;
 uniform float uWindowBrightness = 0.8;
 uniform float uTime = 0.0;
 
-// Better noise function for more natural randomness
+// Moon light properties
+uniform vec3 uLightDirection = vec3(0.5, -0.7, 0.3); // Direction the moonlight is coming from
+uniform vec3 uLightColor = vec3(0.6, 0.7, 0.9);     // Cool moonlight color
+uniform float uAmbientStrength = 0.1;               // Low ambient light for night
+uniform float uDiffuseStrength = 0.3;               // Lower diffuse light for moonlight
+
+// Existing noise function
 float hash(vec2 p) {
     p = 50.0*fract(p*0.3183099 + vec2(0.71,0.113));
     return -1.0+2.0*fract(p.x*p.y*(p.x+p.y));
@@ -52,8 +56,8 @@ vec3 windowPattern(vec3 position) {
     // Window border thickness (percentage of cell)
     float borderThickness = 0.1;
     
-    // Frame color (structure between windows)
-    vec3 frameColor = uBaseColor * 0.7; // Darker than base building
+    // Frame color (structure between windows) - darker at night
+    vec3 frameColor = uBaseColor * 0.4; // Darker than base building for night
     
     // Check if we're in the window or the frame
     bool isFrame = cellPos.x < borderThickness || 
@@ -68,16 +72,16 @@ vec3 windowPattern(vec3 position) {
     // Calculate varied window properties based on position
     float seed = hash(gridPos); // Unique value per window
     
-    // Window states - more varied
+    // Window states - at night, we want more windows to be lit
     // 1. Completely dark (blue-tinted)
     // 2. Dimly lit (evening work)
     // 3. Brightly lit (office lights)
     // 4. Blinking occasionally
     
-    // Randomize window states
+    // Randomize window states - increase density for night scene
     float state = fract(seed * 12.3456 + position.y * 0.1);
     
-    // Height factor - higher floors have more lit windows at night
+    // Height factor - higher floors tend to have more lit windows at night
     float heightFactor = smoothstep(0.0, 15.0, position.y);
     
     // Time-based blinking for some windows
@@ -88,19 +92,20 @@ vec3 windowPattern(vec3 position) {
     // Determine window color based on state
     vec3 windowColor;
     
-    if (state < 0.6 * uWindowDensity * (0.7 + 0.3 * heightFactor)) {
+    // More lit windows at night (0.75 instead of 0.6)
+    if (state < 0.75 * uWindowDensity * (0.7 + 0.3 * heightFactor)) {
         // Lit window - with varied colors
         float warmth = fract(seed * 7.89); // How warm/cool the light is
         
-        if (warmth < 0.7) {
-            // Warm light (yellowish)
-            windowColor = vec3(1.0, 0.9, 0.7) * uWindowBrightness;
-        } else if (warmth < 0.9) {
+        if (warmth < 0.6) {
+            // Warm light (yellowish) - more common at night
+            windowColor = vec3(1.0, 0.9, 0.7) * uWindowBrightness * 1.2; // Brighter for contrast
+        } else if (warmth < 0.85) {
             // White light
-            windowColor = vec3(1.0, 1.0, 1.0) * uWindowBrightness;
+            windowColor = vec3(1.0, 1.0, 1.0) * uWindowBrightness * 1.2; // Brighter for contrast
         } else {
             // Cool light (bluish)
-            windowColor = vec3(0.8, 0.9, 1.0) * uWindowBrightness;
+            windowColor = vec3(0.8, 0.9, 1.0) * uWindowBrightness * 1.2; // Brighter for contrast
         }
         
         // Apply blinking to some windows
@@ -108,8 +113,8 @@ vec3 windowPattern(vec3 position) {
             windowColor *= 0.5 + 0.5 * blink;
         }
     } else {
-        // Dark window - blue tinted reflection
-        windowColor = vec3(0.1, 0.15, 0.25) * 0.5;
+        // Dark window - blue tinted reflection of night sky
+        windowColor = vec3(0.05, 0.08, 0.15) * 0.4; // Very dark blue for night
     }
     
     return windowColor;
@@ -119,22 +124,26 @@ void main() {
     // Get window pattern
     vec3 windowColor = windowPattern(fs_in.vertexColor);
     
-    // Ambient light for the rest of the building
-    float ambientStrength = 0.3;
-    vec3 ambient = ambientStrength * uBaseColor;
-    
-    // Diffuse light
-    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+    // Normalize the light direction and surface normal
     vec3 norm = normalize(fs_in.normal);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * uBaseColor;
+    vec3 lightDir = normalize(-uLightDirection);
     
-    // Use window color for windows, and base building color for the rest
+    // Calculate ambient component
+    vec3 ambient = uAmbientStrength * uLightColor;
+    
+    // Calculate diffuse component (Lambertian reflection)
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = uDiffuseStrength * diff * uLightColor;
+    
+    // Apply lighting to the base building color
+    vec3 litColor = uBaseColor * (ambient + diffuse);
+    
+    // Use window color for windows, and lit building color for the rest
     vec3 result = windowColor;
     
     // If it's not a window (color is very dark), use building lighting
     if (length(windowColor) < 0.1) {
-        result = ambient + diffuse;
+        result = litColor;
     }
     
     // Final color

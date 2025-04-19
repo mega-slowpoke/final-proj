@@ -18,24 +18,19 @@ class SurfaceGround : ISurface {
     /// Create a ground plane
     this(float width, float depth) {
         import std.stdio : writeln;
-        writeln("DEBUG: Inside SurfaceGround constructor");
         MakeGround(width, depth);
-        writeln("DEBUG: SurfaceGround constructor completed");
     }
 
     /// Render the ground
     override void Render() {
         import std.stdio : writeln;
-        writeln("DEBUG: SurfaceGround render called");
         glBindVertexArray(mVAO);
         glDrawElements(GL_TRIANGLES, cast(GLuint)mIndices, GL_UNSIGNED_INT, null);
-        writeln("DEBUG: SurfaceGround render completed");
     }
 
     /// Create ground geometry (a simple plane)
     void MakeGround(float width, float depth) {
         import std.stdio : writeln;
-        writeln("DEBUG: MakeGround - starting geometry creation");
         
         // Vertex data for a plane
         // Format: x, y, z, nx, ny, nz
@@ -45,45 +40,34 @@ class SurfaceGround : ISurface {
             width/2, 0, depth/2, 0, 1, 0,
             -width/2, 0, depth/2, 0, 1, 0
         ];
-        writeln("DEBUG: MakeGround - vertices created");
 
         // Indices for the plane
         GLuint[] indices = [
             0, 1, 2, 2, 3, 0
         ];
-        writeln("DEBUG: MakeGround - indices created");
 
         mIndices = indices.length;
 
         // Create VAO
-        writeln("DEBUG: MakeGround - creating VAO");
         glGenVertexArrays(1, &mVAO);
         glBindVertexArray(mVAO);
-        writeln("DEBUG: MakeGround - VAO created and bound");
 
         // Create IBO
-        writeln("DEBUG: MakeGround - creating IBO");
         glGenBuffers(1, &mIBO);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.length * GLuint.sizeof, indices.ptr, GL_STATIC_DRAW);
-        writeln("DEBUG: MakeGround - IBO created and data loaded");
 
         // Create VBO
-        writeln("DEBUG: MakeGround - creating VBO");
         glGenBuffers(1, &mVBO);
         glBindBuffer(GL_ARRAY_BUFFER, mVBO);
         glBufferData(GL_ARRAY_BUFFER, vertices.length * GLfloat.sizeof, vertices.ptr, GL_STATIC_DRAW);
-        writeln("DEBUG: MakeGround - VBO created and data loaded");
 
         // Set vertex attributes
-        writeln("DEBUG: MakeGround - setting vertex attributes");
         SetVertexAttributes!VertexFormat3F3F();
-        writeln("DEBUG: MakeGround - vertex attributes set");
 
         // Unbind
         glBindVertexArray(0);
         DisableVertexAttributes!VertexFormat3F3F();
-        writeln("DEBUG: MakeGround - completed");
     }
 }
 
@@ -95,16 +79,21 @@ class GroundMaterial : IMaterial {
     vec3 mSidewalkColor;    
     vec3 mZebraColor;       
     float mBlockSize;      
-    float mStreetWidth;     
+    float mStreetWidth;
+    // Moon light properties
+    vec3 mLightDirection = vec3(0.5f, -0.7f, 0.3f);
+    vec3 mLightColor = vec3(0.6f, 0.7f, 0.9f);  // Cool moonlight color
+    float mAmbientStrength = 0.1f;  // Low ambient light for night
+    float mDiffuseStrength = 0.3f;  // Lower diffuse light for moonlight
     
     /// Constructor
     this(string pipelineName) {
         super(pipelineName);
-        // Default colors
-        mBaseColor = vec3(0.2f, 0.7f, 0.2f);           
-        mRoadColor = vec3(0.3f, 0.3f, 0.3f);        
-        mSidewalkColor = vec3(0.75f, 0.75f, 0.7f);  
-        mZebraColor = vec3(0.9f, 0.9f, 0.9f);      
+        // Darker colors for night
+        mBaseColor = vec3(0.1f, 0.3f, 0.1f);         
+        mRoadColor = vec3(0.15f, 0.15f, 0.15f);     
+        mSidewalkColor = vec3(0.4f, 0.4f, 0.38f);   
+        mZebraColor = vec3(0.5f, 0.5f, 0.5f);      
     }
     
     /// Set the city layout parameters (from city generator)
@@ -142,6 +131,23 @@ class GroundMaterial : IMaterial {
         
         if("uStreetWidth" in mUniformMap) {
             mUniformMap["uStreetWidth"].Set(mStreetWidth);
+        }
+        
+        // Set light uniforms
+        if("uLightDirection" in mUniformMap) {
+            mUniformMap["uLightDirection"].Set(mLightDirection.DataPtr());
+        }
+        
+        if("uLightColor" in mUniformMap) {
+            mUniformMap["uLightColor"].Set(mLightColor.DataPtr());
+        }
+        
+        if("uAmbientStrength" in mUniformMap) {
+            mUniformMap["uAmbientStrength"].Set(mAmbientStrength);
+        }
+        
+        if("uDiffuseStrength" in mUniformMap) {
+            mUniformMap["uDiffuseStrength"].Set(mDiffuseStrength);
         }
     }
 }

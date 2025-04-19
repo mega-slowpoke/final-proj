@@ -131,12 +131,16 @@ struct CityGraphicsApp {
                     mCamera.MoveUp();
                 } else if (event.key.keysym.sym == SDLK_z) {
                     mCamera.MoveDown();
+                } else if (event.key.keysym.sym == SDLK_t) {
+                    // Toggle day/night with 'T' key
+                    mCityGenerator.toggleDayNight();
+                    mRenderer.toggleDayNight();
+                    writeln(mCityGenerator.mIsNightMode ? "Night mode enabled" : "Day mode enabled");
                 }
                 writeln("Camera Position: ", mCamera.mEyePosition);
             }
         }
 
-        // Retrieve the mouse position
         int mouseX, mouseY;
         SDL_GetMouseState(&mouseX, &mouseY);
         mCamera.MouseLook(mouseX, mouseY);
@@ -144,49 +148,39 @@ struct CityGraphicsApp {
 
     void SetupScene() {
         try {
-            writeln("DEBUG: SetupScene - Starting scene setup");
             
             // Create shader files if they don't exist
             // Ensure pipelines/city directory exists
-            writeln("DEBUG: SetupScene - Checking pipelines directory");
             if (!exists("pipelines/city")) {
-                writeln("DEBUG: SetupScene - Creating pipelines directory");
                 mkdirRecurse("pipelines/city");
             }
             
             // Create basic vertex shader for buildings
-            writeln("DEBUG: SetupScene - Checking building vertex shader");
             if (!exists("pipelines/city/building.vert")) {
-                writeln("DEBUG: SetupScene - building vertex shader doesn't exist");
+                writeln(" SetupScene - building vertex shader doesn't exist");
             }
             
             // Create basic fragment shader for buildings
-            writeln("DEBUG: SetupScene - Checking building fragment shader");
             if (!exists("pipelines/city/building.frag")) {
                 writeln("DEBUG: SetupScene - building fragment shader doesn't exist");
             }
             
-            writeln("DEBUG: SetupScene - Checking ground vertex shader");
             if (!exists("pipelines/city/ground.vert")) {
                 writeln("DEBUG: SetupScene - ground vertex shader doesn't exist");
             }
             
             // Create basic fragment shader for ground
-            writeln("DEBUG: SetupScene - Checking ground fragment shader");
             if (!exists("pipelines/city/ground.frag")) {
                 writeln("DEBUG: SetupScene - ground fragment shader doesn't exist");
             }
             
             // Make sure the camera view matrix is updated
-            writeln("DEBUG: SetupScene - Updating camera view matrix");
             mCamera.UpdateViewMatrix();
             
             // Generate the city
-            writeln("DEBUG: SetupScene - Generating city");
             mCityGenerator.generateCity();
             
             // Update matrices for all rendered objects
-            writeln("DEBUG: SetupScene - Updating matrices");
             updateMatrices();
             
             writeln("DEBUG: SetupScene - Scene setup complete");
@@ -259,16 +253,12 @@ struct CityGraphicsApp {
     /// Main application loop
     void Loop() {
         try {
-            writeln("DEBUG: About to set up scene");
             // Setup the graphics scene
             SetupScene();
-            writeln("DEBUG: Scene setup complete, starting main loop");
 
             // Run the graphics application loop
             while (mGameIsRunning) {
-                writeln("DEBUG: Processing frame");
                 AdvanceFrame();
-                writeln("DEBUG: Frame processed");
             }
         } catch (Exception e) {
             writeln("ERROR in main loop: ", e.msg);

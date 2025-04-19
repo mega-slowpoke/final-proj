@@ -14,6 +14,8 @@ class Renderer{
     int mScreenWidth;
     int mScreenHeight;
 
+    bool mIsNightMode = true;
+
     /// Constructor
     this(SDL_Window* window, int width, int height){
         mWindow = window;
@@ -21,14 +23,23 @@ class Renderer{
         mScreenHeight = height;
     }
 
-    /// Sets state at the start of a frame
+   
     void StartingFrame(){
         glViewport(0,0,mScreenWidth, mScreenHeight);
-        // Clear the renderer each time we render
-        glClearColor(0.0f,0.6f,0.8f,1.0f);
+        
+        if (mIsNightMode) {
+            glClearColor(0.05f, 0.07f, 0.15f, 1.0f); 
+        } else {
+            glClearColor(0.0f, 0.6f, 0.8f, 1.0f);  
+        }
+        
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
+        
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
+
 
     /// Set or clear any state at end of a frame
     void EndingFrame(){
@@ -49,5 +60,11 @@ class Renderer{
 
         // perform any cleanup and ultimately the double or triple buffering to display the final framebuffer.
         EndingFrame();
+    }
+
+
+    // change mode
+    void toggleDayNight() {
+        mIsNightMode = !mIsNightMode;
     }
 }
